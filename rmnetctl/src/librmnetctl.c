@@ -98,12 +98,7 @@ struct nlmsg {
 
 struct rmnetctl_uplink_params {
 	uint16_t byte_count;
-#ifdef NO_UPLINK_FEATURES
 	uint16_t packet_count;
-#else
-	uint8_t packet_count;
-	uint8_t features;
-#endif
 	uint32_t time_limit;
 };
 
@@ -1517,14 +1512,8 @@ int rtrmnet_ctl_changevnd(rmnetctl_hndl_t *hndl, char *devname, char *vndname,
 
 int rtrmnet_ctl_getvnd(rmnetctl_hndl_t *hndl, char *vndname,
 		       uint16_t *error_code, uint16_t *mux_id,
-		       uint32_t *flagconfig,
-#ifdef NO_UPLINK_FEATURES
-		       uint16_t *agg_count,
-#else
-		       uint8_t *agg_count,
-#endif
-		       uint16_t *agg_size, uint32_t *agg_time,
-		       uint8_t *features)
+		       uint32_t *flagconfig, uint16_t *agg_count,
+		       uint16_t *agg_size, uint32_t *agg_time)
 {
 	struct nlmsg req;
 	struct nlmsghdr *resp;
@@ -1613,21 +1602,10 @@ int rtrmnet_ctl_getvnd(rmnetctl_hndl_t *hndl, char *vndname,
 
 		ul_agg = (struct rmnetctl_uplink_params *)
 			 RTA_DATA(tb[RMNETCTL_IFLA_UPLINK_PARAMS]);
-
-		if (agg_size)
-			*agg_size = ul_agg->byte_count;
-
 		if (agg_count)
 			*agg_count = ul_agg->packet_count;
-
-#ifdef NO_UPLINK_FEATURES
-		if (features)
-			*features = 0;
-#else
-		if (features)
-			*features = ul_agg->features;
-#endif
-
+		if (agg_size)
+			*agg_size = ul_agg->byte_count;
 		if (agg_time)
 			*agg_time = ul_agg->time_limit;
 	}
@@ -1690,9 +1668,6 @@ int rtrmnet_set_uplink_aggregation_params(rmnetctl_hndl_t *hndl,
 					  uint8_t packet_count,
 					  uint16_t byte_count,
 					  uint32_t time_limit,
-#ifndef NO_UPLINK_FEATURES
-					  uint8_t features,
-#endif
 					  uint16_t *error_code)
 {
 	struct nlmsg req;
@@ -1757,9 +1732,6 @@ int rtrmnet_set_uplink_aggregation_params(rmnetctl_hndl_t *hndl,
 
 	uplink_params.byte_count = byte_count;
 	uplink_params.packet_count = packet_count;
-#ifndef NO_UPLINK_FEATURES
-	uplink_params.features = features;
-#endif
 	uplink_params.time_limit = time_limit;
 	rc = rta_put(&req, &reqsize, RMNETCTL_IFLA_UPLINK_PARAMS,
 		     sizeof(uplink_params), &uplink_params);
